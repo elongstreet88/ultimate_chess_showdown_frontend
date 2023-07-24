@@ -100,13 +100,49 @@
 
     function onDragStart(source, piece, position, orientation) {
       if (game.game_over()) return false
+
       if ((game.turn() === 'w' && piece.search(/^b/) !== -1) ||
-        (game.turn() === 'b' && piece.search(/^w/) !== -1)) {
+          (game.turn() === 'b' && piece.search(/^w/) !== -1)) {
         return false
       }
+
+      // Get legal moves for this piece
+      var moves = game.moves({
+        square: source,
+        verbose: true
+      });
+
+      // Remove previously highlighted squares
+      $('#myBoard .square-55d63').css('background', '');
+
+      // Highlight the squares where the piece can be moved
+      for (var i = 0; i < moves.length; i++) {
+        var squareEl = $('#myBoard .square-' + moves[i].to);
+
+        // Create a div element for the blue dot with inline CSS
+        var dot = $('<div>').css({
+          width: '10px',
+          height: '10px',
+          backgroundColor: 'blue',
+          borderRadius: '50%',
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)'
+        }).addClass('blue-dot');
+        
+        // Append the blue dot to the square
+        squareEl.append(dot);
+      }
+
     }
 
+
     async function onDrop(source, target) {
+      // Remove the highlight from the squares
+      $('#myBoard .square-55d63').css('background', '');
+      $('.blue-dot').remove();
+
       var move = game.move({
         from: source,
         to: target,
@@ -124,6 +160,7 @@
 
       updateStatus();
     }
+
 
     function onSnapEnd() {
       board.position(game.fen());
@@ -159,6 +196,10 @@
       onDragStart: onDragStart,
       onDrop: onDrop,
       onSnapEnd: onSnapEnd,
+      moveSpeed: 1,
+    snapbackSpeed: 1,
+    snapSpeed: 1,
+      appearspeed: 'fast',
       pieceTheme: 'https://raw.githubusercontent.com/oakmac/chessboardjs/master/website/img/chesspieces/alpha/{piece}.png',
     };
 
@@ -184,24 +225,6 @@
         const { position } = data;
         game.load(position);
         board.position(game.fen());
-      }
-    }
-
-    async function fetchLatestPosition() {
-      console.log('fetchLatestPosition called at', new Date());
-      try {
-        const response = await fetch(`http://localhost:8000/api/v1/game/${gameId}`);
-        if (response.ok) {
-          const data = await response.json();
-          const { position } = data;
-          if (game.fen() !== position) {
-            game.load(position);
-            board.position(position);
-            updateStatus();
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching latest position:', error);
       }
     }
 
